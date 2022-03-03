@@ -41,28 +41,43 @@ func get_words() throws -> [String] {
  
  - Returns: List of possible words.
  */
-func get_wordle(words: [String], known: String, not_allowed: String, must_contain: String) -> [String]{
+func get_wordle(words: [String], green: String, not_allowed: String, orange: [String]) -> [String]{
     var possible: [String] = []
     
     let lower_words = words.map { word in
         word.lowercased()
     }
     
+    var must_contain = ""
+    
+    for info in orange {
+        for char in info {
+            if char != "_" {
+                must_contain.append(char)
+            }
+        }
+    }
+    
     let filtered_words = lower_words.filter({ word in
-        word.count == known.count &&
+        word.count == green.count &&
         !word.contains(where: { char in
             not_allowed.contains(char)
         }) &&
         !must_contain.contains(where: { char in
             !word.contains(char)
+        }) &&
+        !orange.contains(where: { info in
+            zip(word, info).contains(where: { (c1, c2) in
+                c1 == c2
+        })
         })
     })
     
     for word in filtered_words {
-        if !zip(known, word).filter({ (l1, l2) in
-            l1 != "_"
-        }).map({ (l1, l2) in
-            l1 == l2
+        if !zip(green, word).filter({ (c1, c2) in
+            c1 != "_"
+        }).map({ (c1, c2) in
+            c1 == c2
         }).contains(false) {
             possible.append(word)
         }
@@ -71,20 +86,73 @@ func get_wordle(words: [String], known: String, not_allowed: String, must_contai
     return possible
 }
 
+func help() {
+    print("""
+    --- Wordle Solver ---
+    
+    # Synopsis
+    
+    This program will display all words that satisfy the contraints of a given wordle board.
+    
+    # Usage
+    
+    First enter the locations and values of the green letters with underscores in between.
+    
+    Example:
+        The final word is 'crane',
+        We know 'c', 'a', and 'n',
+        So we enter:
+    
+        'c_an_'
+    
+    Next enter the locations of orange letters for every row that contains orange letters.
+    
+    Example:
+        The final word is 'nasty',
+        We know 'a' and 's' are in the word:
+    
+        '__as_'
+    
+        We also know 'n' is in the word:
+    
+        '___n'
+    
+    Next we enter all letters that are not in the word:
+    
+        'gelpbc'
+    
+    --- Wordle Solver ---
+    """)
+}
+
 // Main function
 func main() {
-    print("Enter known letters (\'_\' if unknown): ", terminator: "")
-    let known = readLine()
-
-    print("Enter letters that must be in the word: ", terminator: "")
-    let must_contain = readLine()
-
-    print("Disallowed letters: ", terminator: "")
-    let not_allowed = readLine()
-
-    if not_allowed!.contains(where: { char in known!.contains(char) }) {
-        print("Warning: not_allowed characters and known characters intersect. Correct words may be omitted.")
+    
+    if CommandLine.arguments.contains("-h") {
+        help()
+        return
     }
+    
+    print("Enter green letters (\'_\' if unknown): ", terminator: "")
+    let known = readLine()!
+
+    var orange: [String] = []
+    var recv: String? = nil
+    
+    while recv != "" {
+        print("Enter orange letters (\'_\' if unknown, return when done): ", terminator: "")
+        
+        recv = readLine()
+        
+        if recv != "" {
+            orange.append(recv!)
+        }
+    }
+
+    print("Enter grey letters: ", terminator: "")
+    let not_allowed = readLine()!.filter({ char in
+        !known.contains(char)
+    })
     
     print("Fetching word list...")
 
@@ -93,7 +161,7 @@ func main() {
         print("Done.")
 
         print("Matching words...")
-        let possible = get_wordle(words: words, known: known!, not_allowed: not_allowed!, must_contain: must_contain!)
+        let possible = get_wordle(words: words, green: known, not_allowed: not_allowed, orange: orange)
         
         print("Possible words:", possible.map {String($0)}.joined(separator: ", "))
     } catch {
@@ -103,5 +171,4 @@ func main() {
 }
 
 // Main
-
 main()
