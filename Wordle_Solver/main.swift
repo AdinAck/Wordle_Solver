@@ -18,7 +18,7 @@ import Foundation
  - Returns: A list of strings representing each word in the dictionary.
  */
 func get_words() throws -> [String] {
-    guard let url = URL(string: "http://www.mieliestronk.com/corncob_caps.txt") else {
+    guard let url = URL(string: "https://www.mit.edu/~ecprice/wordlist.10000") else {
         throw URLError(.badURL)
     }
         
